@@ -45,20 +45,49 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* 🔑 SUPABASE (TES INFOS) */
 const SUPABASE_URL = "https://ywwefbolidehfjnnvcih.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3d2VmYm9saWRlaGZqbm52Y2loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4OTIxODgsImV4cCI6MjA4MTQ2ODE4OH0.UOsi15L0LTBCq0Hl_Qy9UhhUZ7_2F1MscMDiphDk2Mg";
 
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* éléments */
 const box = document.getElementById("affichage");
 const imageInput = document.getElementById("imageInput");
 
-/* canal temps réel */
+/* 🔴 IMPORTANT : canal unique */
 const channel = supabase.channel("live-actions");
 
-/* -------- COULEURS -------- */
+/* --------- APPLICATION LOCALE --------- */
+function applyColor(color) {
+    box.style.backgroundColor = color;
+    box.style.backgroundImage = "";
+    setTimeout(() => {
+        box.style.backgroundColor = "white";
+    }, 5000);
+}
+
+function applyImage(image) {
+    box.style.backgroundImage = `url(${image})`;
+    box.style.backgroundColor = "white";
+    setTimeout(() => {
+        box.style.backgroundImage = "";
+    }, 5000);
+}
+
+/* --------- RÉCEPTION --------- */
+channel
+  .on("broadcast", { event: "color" }, ({ payload }) => {
+      applyColor(payload.color);
+  })
+  .on("broadcast", { event: "image" }, ({ payload }) => {
+      applyImage(payload.image);
+  });
+
+/* ✅ CONNEXION AU CANAL (TRÈS IMPORTANT) */
+channel.subscribe((status) => {
+    console.log("Realtime status:", status);
+});
+
+/* --------- ENVOI --------- */
 function showColor(color) {
     applyColor(color);
 
@@ -69,15 +98,6 @@ function showColor(color) {
     });
 }
 
-function applyColor(color) {
-    box.style.backgroundColor = color;
-    box.style.backgroundImage = "";
-    setTimeout(() => {
-        box.style.backgroundColor = "white";
-    }, 5000);
-}
-
-/* -------- IMAGES -------- */
 imageInput.addEventListener("change", function(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -94,25 +114,6 @@ imageInput.addEventListener("change", function(event) {
     };
     reader.readAsDataURL(file);
 });
-
-function applyImage(image) {
-    box.style.backgroundImage = `url(${image})`;
-    box.style.backgroundColor = "white";
-    setTimeout(() => {
-        box.style.backgroundImage = "";
-    }, 5000);
-}
-
-/* -------- RÉCEPTION -------- */
-channel
-  .on("broadcast", { event: "color" }, ({ payload }) => {
-      applyColor(payload.color);
-  })
-  .on("broadcast", { event: "image" }, ({ payload }) => {
-      applyImage(payload.image);
-  })
-  .subscribe();
 </script>
-
 </body>
 </html>
