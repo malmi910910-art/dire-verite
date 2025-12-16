@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>dire les vérités</title>
+    <style>
+        body { text-align:center; font-family:Arial; margin-top:40px; }
+        button, input[type="file"] {
+            font-size:18px;
+            padding:15px;
+            margin:10px;
+            border:none;
+            border-radius:10px;
+            cursor:pointer;
+        }
+        button { color:white; width:150px; }
+        #affichage {
+            width:300px;
+            height:300px;
+            margin:20px auto;
+            border:3px solid #444;
+            border-radius:10px;
+            background:white;
+            background-size: cover;
+            background-position: center;
+            transition:0.3s;
+        }
+    </style>
+</head>
+<body>
+
+<h1>dire les vérités</h1>
+
+<button style="background:red" onclick="showColor('red')">Rouge</button>
+<button style="background:orange" onclick="showColor('orange')">Orange</button>
+<button style="background:green" onclick="showColor('green')">Vert</button>
+
+<br>
+
+<input type="file" id="imageInput" accept="image/*">
+
+<div id="affichage"></div>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* 🔑 SUPABASE (TES INFOS) */
+const SUPABASE_URL = "https://ywwefbolidehfjnnvcih.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3d2VmYm9saWRlaGZqbm52Y2loIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU4OTIxODgsImV4cCI6MjA4MTQ2ODE4OH0.UOsi15L0LTBCq0Hl_Qy9UhhUZ7_2F1MscMDiphDk2Mg";
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* éléments */
+const box = document.getElementById("affichage");
+const imageInput = document.getElementById("imageInput");
+
+/* canal temps réel */
+const channel = supabase.channel("live-actions");
+
+/* -------- COULEURS -------- */
+function showColor(color) {
+    applyColor(color);
+
+    channel.send({
+        type: "broadcast",
+        event: "color",
+        payload: { color }
+    });
+}
+
+function applyColor(color) {
+    box.style.backgroundColor = color;
+    box.style.backgroundImage = "";
+    setTimeout(() => {
+        box.style.backgroundColor = "white";
+    }, 5000);
+}
+
+/* -------- IMAGES -------- */
+imageInput.addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        applyImage(e.target.result);
+
+        channel.send({
+            type: "broadcast",
+            event: "image",
+            payload: { image: e.target.result }
+        });
+    };
+    reader.readAsDataURL(file);
+});
+
+function applyImage(image) {
+    box.style.backgroundImage = `url(${image})`;
+    box.style.backgroundColor = "white";
+    setTimeout(() => {
+        box.style.backgroundImage = "";
+    }, 5000);
+}
+
+/* -------- RÉCEPTION -------- */
+channel
+  .on("broadcast", { event: "color" }, ({ payload }) => {
+      applyColor(payload.color);
+  })
+  .on("broadcast", { event: "image" }, ({ payload }) => {
+      applyImage(payload.image);
+  })
+  .subscribe();
+</script>
+
+</body>
+</html>
